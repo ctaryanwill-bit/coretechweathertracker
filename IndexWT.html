@@ -828,31 +828,31 @@
           <tr>
             <td><span class="tut-pin display">CS</span></td>
             <td>Chip Select (Active LOW)</td>
-            <td><span class="tut-pin esp">GPIO 5</span></td>
+            <td><span class="tut-pin esp">GPIO 8</span></td>
             <td><span class="tut-pin desc">Selects the ST7735 as the active SPI slave. Pull LOW to enable; HIGH to deselect and release the bus.</span></td>
           </tr>
           <tr>
             <td><span class="tut-pin display">RESET</span></td>
             <td>Hardware Reset (Active LOW)</td>
-            <td><span class="tut-pin esp">GPIO 4</span></td>
+            <td><span class="tut-pin esp">GPIO 10</span></td>
             <td><span class="tut-pin desc">Drives the controller reset sequence. The Adafruit library pulses this pin LOW for ≥10 ms on <code>begin()</code>.</span></td>
           </tr>
           <tr>
             <td><span class="tut-pin display">A0 / DC</span></td>
             <td>Data / Command Select</td>
-            <td><span class="tut-pin esp">GPIO 2</span></td>
+            <td><span class="tut-pin esp">GPIO 9</span></td>
             <td><span class="tut-pin desc">HIGH = pixel data byte; LOW = command register byte. This line disambiguates every SPI payload to the ST7735.</span></td>
           </tr>
           <tr>
             <td><span class="tut-pin display">SDA / MOSI</span></td>
             <td>Master Out Slave In</td>
-            <td><span class="tut-pin esp">GPIO 23</span></td>
+            <td><span class="tut-pin esp">GPIO 11</span></td>
             <td><span class="tut-pin desc">Serial data line. Pixel color data and register commands are clocked out MSB-first on this line.</span></td>
           </tr>
           <tr>
             <td><span class="tut-pin display">SCK</span></td>
             <td>SPI Clock</td>
-            <td><span class="tut-pin esp">GPIO 18</span></td>
+            <td><span class="tut-pin esp">GPIO 13</span></td>
             <td><span class="tut-pin desc">Hardware SPI clock. The ST7735 samples SDA on the rising edge (CPOL=0, CPHA=0, Mode 0).</span></td>
           </tr>
           <tr>
@@ -1180,7 +1180,7 @@
     <div class="tut-note tip">
       <div class="tut-note-icon">💡</div>
       <div>
-        <strong>Core Tech SETUP Guide for the ESP-32 S3 and LCD TFT SCREEN</strong>
+        <strong>Core Tech SETUP Guide for the ESP-32 S3 </strong>
         <a class="tut-link-btn" href="https://docs.google.com/document/d/1nzyjX3uKS_nDGJzYx5Y4JxVump6trqO_P88tq7wvM6Y/edit?usp=drive_link" target="_blank" rel="noopener">
           Open the full setup guide
         </a>
