@@ -324,17 +324,6 @@ body {
   position: relative;
 }
 
-.tut-timeline::before {
-  content: '';
-  position: absolute;
-  left: 1.4rem;
-  top: 2.8rem;
-  bottom: 0;
-  width: 1px;
-  background: linear-gradient(to bottom, var(--accent-green) 0%, rgba(40,199,111,.15) 80%, transparent 100%);
-  pointer-events: none;
-}
-
 /* ── Section ───────────────────────────────────────────────── */
 .tut-section {
   margin-bottom: 3.5rem;
@@ -365,6 +354,11 @@ body {
   box-shadow: 0 0 0 5px rgba(40,199,111,.12), 0 0 0 10px rgba(40,199,111,.05);
   position: relative;
   z-index: 1;
+}
+
+/* Decorative accent bar next to the step number — fully contained in header */
+.tut-section-header::after {
+  display: none;
 }
 
 .tut-section-header h2 {
@@ -814,7 +808,6 @@ body {
 @media (max-width: 640px) {
   .tut-hero { padding: 2.25rem 1.5rem 2rem; border-radius: var(--r-lg); }
   .tut-wrap { padding: 0 1rem 4rem; }
-  .tut-timeline::before { left: 1.35rem; }
   .tut-section-header h2 { font-size: 1.1rem; }
   .tut-code-body { font-size: .76rem; }
   .tut-media.grid-2,
