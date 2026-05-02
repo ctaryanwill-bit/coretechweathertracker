@@ -1,60 +1,159 @@
-<!-- ============================================================
-     ctechassist.org – Tutorial Component
-     ESP32-S3 + ST7735 TFT Build Guide
-     Paste the <style> block into your site's CSS file and the
-     <body> markup wherever you mount your article content.
-     ============================================================ -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ESP32-S3 + ST7735 TFT — Full Assembly & Firmware Guide | ctechassist.org</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://i.postimg.cc">
+<link rel="preconnect" href="https://streamable.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+<!-- ── SEO & Social preview ─────────────────────────────────── -->
+<meta name="description" content="A complete engineering walkthrough for building a networked display controller using the Lonely Binary ESP32-S3 Gold Edition and a 1.8″ ST7735 TFT LCD over hardware SPI.">
+
+<meta property="og:title" content="ESP32-S3 + ST7735 TFT — Full Assembly & Firmware Guide">
+<meta property="og:description" content="A complete engineering walkthrough for building a networked display controller using the Lonely Binary ESP32-S3 Gold Edition and a 1.8″ ST7735 TFT LCD over hardware SPI.">
+<meta property="og:image" content="https://i.postimg.cc/HLDFrpZ2/891c13f3-1f44-4c9d-b95f-2f20f2577aa6-removebg-preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="ctechassist.org">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="ESP32-S3 + ST7735 TFT — Full Assembly & Firmware Guide">
+<meta name="twitter:description" content="A complete engineering walkthrough for building a networked display controller using the Lonely Binary ESP32-S3 Gold Edition and a 1.8″ ST7735 TFT LCD over hardware SPI.">
+<meta name="twitter:image" content="https://i.postimg.cc/HLDFrpZ2/891c13f3-1f44-4c9d-b95f-2f20f2577aa6-removebg-preview.png">
 
 <style>
 /* ── Design tokens ─────────────────────────────────────────── */
 :root {
-  --bg-base:        #0d1117;
-  --bg-surface:     #161b22;
-  --bg-card:        #1c2330;
-  --bg-code:        #0a0e14;
-  --border:         #2d3748;
-  --border-accent:  #30a86b;
-  --text-primary:   #e2e8f0;
-  --text-secondary: #8b9ab0;
-  --text-muted:     #4a5568;
-  --accent-green:   #30a86b;
+  --bg-base:        #0a0f16;
+  --bg-surface:     #111720;
+  --bg-card:        #181f2b;
+  --bg-code:        #080c12;
+  --border:         #232d3f;
+  --border-accent:  #28c76f;
+  --text-primary:   #e8edf5;
+  --text-secondary: #8fa0b8;
+  --text-muted:     #536070;
+  --accent-green:   #28c76f;
+  --accent-green-dim: rgba(40,199,111,.12);
   --accent-cyan:    #38bdf8;
   --accent-amber:   #f59e0b;
   --accent-rose:    #f43f5e;
-  --accent-purple:  #a78bfa;
-  --step-num-size:  2.6rem;
-  --radius-sm:      6px;
-  --radius-md:      10px;
-  --radius-lg:      16px;
-  --font-mono:      'JetBrains Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace;
-  --font-body:      'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif;
-  --font-display:   'IBM Plex Mono', var(--font-mono);
+  --accent-purple:  #b197fc;
+  --step-size:      2.8rem;
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 16px;
+  --r-xl: 22px;
+  --font-mono:    'JetBrains Mono', 'IBM Plex Mono', Consolas, monospace;
+  --font-body:    'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif;
+  --font-display: 'IBM Plex Mono', var(--font-mono);
+  --progress-w:   0%;
 }
 
-/* ── Base resets (scoped) ──────────────────────────────────── */
-.tut-wrap *,
-.tut-wrap *::before,
-.tut-wrap *::after { box-sizing: border-box; }
+/* ── Resets ───────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-.tut-wrap {
+html { scroll-behavior: smooth; }
+
+body {
   font-family: var(--font-body);
-  color: var(--text-primary);
   background: var(--bg-base);
+  color: var(--text-primary);
   line-height: 1.75;
-  padding: 0 1rem 4rem;
-  max-width: 100%;
-  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+/* ── Reading progress bar ─────────────────────────────────── */
+#progress-bar {
+  position: fixed;
+  top: 0; left: 0;
+  height: 3px;
+  width: var(--progress-w);
+  background: linear-gradient(90deg, var(--accent-green), var(--accent-cyan));
+  z-index: 1000;
+  transition: width .1s linear;
+  border-radius: 0 2px 2px 0;
+}
+
+/* ── Sticky nav ────────────────────────────────────────────── */
+#sticky-nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  background: rgba(10,15,22,.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  z-index: 900;
+  padding: 0 1.5rem;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transform: translateY(-100%);
+  transition: transform .3s ease;
+}
+
+#sticky-nav.visible { transform: translateY(0); }
+
+.nav-brand {
+  font-family: var(--font-mono);
+  font-size: .72rem;
+  color: var(--accent-green);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+.nav-steps {
+  display: flex;
+  gap: .35rem;
+  align-items: center;
+}
+
+.nav-step {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: .65rem;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+  text-decoration: none;
+  transition: border-color .2s, color .2s, background .2s;
+  cursor: pointer;
+}
+
+.nav-step:hover,
+.nav-step.active {
+  border-color: var(--accent-green);
+  color: var(--accent-green);
+  background: var(--accent-green-dim);
+}
+
+/* ── Layout wrapper ────────────────────────────────────────── */
+.tut-wrap {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 1.25rem 5rem;
 }
 
 /* ── Hero ──────────────────────────────────────────────────── */
 .tut-hero {
   position: relative;
   overflow: hidden;
-  border-radius: var(--radius-lg);
+  border-radius: var(--r-xl);
   background: var(--bg-surface);
   border: 1px solid var(--border);
-  padding: 3.5rem 2.5rem 3rem;
-  margin-bottom: 3rem;
+  padding: 4rem 3rem 3.5rem;
+  margin: 2rem 0 2.5rem;
 }
 
 .tut-hero::before {
@@ -62,57 +161,84 @@
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(ellipse 60% 50% at 80% 50%, rgba(48,168,107,.12) 0%, transparent 70%),
-    radial-gradient(ellipse 40% 60% at 10% 80%, rgba(56,189,248,.08) 0%, transparent 70%);
+    radial-gradient(ellipse 55% 60% at 90% 40%, rgba(40,199,111,.2) 0%, transparent 65%),
+    radial-gradient(ellipse 35% 50% at 5% 85%, rgba(56,189,248,.13) 0%, transparent 65%);
   pointer-events: none;
 }
 
+/* Dot-grid texture overlay */
+.tut-hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, rgba(255,255,255,.035) 1px, transparent 1px);
+  background-size: 22px 22px;
+  pointer-events: none;
+  opacity: 1;
+}
+
+.hero-inner { position: relative; z-index: 1; }
+
 .tut-hero-eyebrow {
   font-family: var(--font-mono);
-  font-size: .72rem;
-  letter-spacing: .18em;
+  font-size: .7rem;
+  letter-spacing: .2em;
   text-transform: uppercase;
   color: var(--accent-green);
-  margin-bottom: .75rem;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+
+.tut-hero-eyebrow::before {
+  content: '';
+  display: inline-block;
+  width: 18px; height: 2px;
+  background: var(--accent-green);
+  border-radius: 2px;
 }
 
 .tut-hero h1 {
   font-family: var(--font-display);
-  font-size: clamp(1.6rem, 4vw, 2.6rem);
+  font-size: clamp(1.75rem, 4.5vw, 2.8rem);
   font-weight: 700;
-  line-height: 1.2;
-  margin: 0 0 1rem;
+  line-height: 1.15;
+  margin-bottom: 1.25rem;
   color: var(--text-primary);
+  letter-spacing: -.02em;
 }
 
 .tut-hero h1 span { color: var(--accent-cyan); }
 
 .tut-hero-sub {
-  max-width: 58ch;
+  max-width: 55ch;
   color: var(--text-secondary);
-  font-size: .96rem;
-  margin: 0 0 2rem;
+  font-size: 1rem;
+  line-height: 1.7;
+  margin-bottom: 2.25rem;
 }
 
 .tut-pill-row {
   display: flex;
   flex-wrap: wrap;
-  gap: .5rem;
+  gap: .45rem;
 }
 
 .tut-pill {
   font-family: var(--font-mono);
-  font-size: .72rem;
-  padding: .25rem .75rem;
+  font-size: .68rem;
+  padding: .28rem .8rem;
   border-radius: 999px;
   border: 1px solid var(--border);
   background: rgba(255,255,255,.04);
   color: var(--text-secondary);
   white-space: nowrap;
+  letter-spacing: .04em;
 }
-.tut-pill.green  { border-color: var(--accent-green);  color: var(--accent-green); }
-.tut-pill.cyan   { border-color: var(--accent-cyan);   color: var(--accent-cyan); }
-.tut-pill.amber  { border-color: var(--accent-amber);  color: var(--accent-amber); }
+.tut-pill.green  { border-color: rgba(40,199,111,.5);  color: var(--accent-green);  background: rgba(40,199,111,.08); }
+.tut-pill.cyan   { border-color: rgba(56,189,248,.5);  color: var(--accent-cyan);   background: rgba(56,189,248,.08); }
+.tut-pill.amber  { border-color: rgba(245,158,11,.5);  color: var(--accent-amber);  background: rgba(245,158,11,.08); }
 
 /* ── Product link cards ────────────────────────────────────── */
 .tut-products {
@@ -122,6 +248,17 @@
   margin-bottom: 3rem;
 }
 
+/* Featured first card */
+.tut-products .tut-product-link:first-child {
+  border-color: rgba(40,199,111,.3);
+  background: linear-gradient(135deg, rgba(40,199,111,.07) 0%, var(--bg-card) 60%);
+}
+
+.tut-products .tut-product-link:first-child .tut-product-icon {
+  background: rgba(40,199,111,.18);
+  border-color: rgba(40,199,111,.45);
+}
+
 .tut-product-link {
   display: flex;
   align-items: center;
@@ -129,172 +266,220 @@
   padding: 1rem 1.25rem;
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: var(--radius-md);
+  border-radius: var(--r-md);
   text-decoration: none;
   color: var(--text-primary);
-  transition: border-color .2s, transform .2s, box-shadow .2s;
+  transition: border-color .22s, transform .22s, box-shadow .22s;
+  will-change: transform;
 }
 
 .tut-product-link:hover {
   border-color: var(--accent-green);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(48,168,107,.15);
+  transform: translateY(-3px);
+  box-shadow: 0 10px 28px rgba(40,199,111,.14);
 }
 
 .tut-product-icon {
   flex-shrink: 0;
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-sm);
-  background: rgba(48,168,107,.1);
-  border: 1px solid rgba(48,168,107,.25);
+  width: 42px; height: 42px;
+  border-radius: var(--r-sm);
+  background: rgba(40,199,111,.08);
+  border: 1px solid rgba(40,199,111,.2);
   display: grid;
   place-items: center;
-  font-size: 1.2rem;
+  font-size: 1.25rem;
 }
 
 .tut-product-label {
-  font-size: .72rem;
+  font-size: .68rem;
   color: var(--text-muted);
   text-transform: uppercase;
-  letter-spacing: .08em;
+  letter-spacing: .1em;
   font-family: var(--font-mono);
+  margin-bottom: .2rem;
 }
 
 .tut-product-name {
   font-weight: 600;
-  font-size: .92rem;
+  font-size: .9rem;
   line-height: 1.3;
+  color: var(--text-primary);
 }
 
 .tut-product-arrow {
   margin-left: auto;
   color: var(--text-muted);
-  font-size: 1.1rem;
-  transition: color .2s;
+  font-size: 1.05rem;
+  flex-shrink: 0;
+  transition: color .2s, transform .2s;
 }
 
-.tut-product-link:hover .tut-product-arrow { color: var(--accent-green); }
+.tut-product-link:hover .tut-product-arrow {
+  color: var(--accent-green);
+  transform: translate(2px, -2px);
+}
 
-/* ── Section headings ──────────────────────────────────────── */
+/* ── Step connector timeline ──────────────────────────────── */
+.tut-timeline {
+  position: relative;
+}
+
+.tut-timeline::before {
+  content: '';
+  position: absolute;
+  left: 1.4rem;
+  top: 2.8rem;
+  bottom: 0;
+  width: 1px;
+  background: linear-gradient(to bottom, var(--accent-green) 0%, rgba(40,199,111,.15) 80%, transparent 100%);
+  pointer-events: none;
+}
+
+/* ── Section ───────────────────────────────────────────────── */
 .tut-section {
   margin-bottom: 3.5rem;
+  scroll-margin-top: 70px;
 }
 
 .tut-section-header {
   display: flex;
-  align-items: center;
-  gap: 1rem;
+  align-items: flex-start;
+  gap: 1.1rem;
   margin-bottom: 1.75rem;
-  padding-bottom: 1rem;
+  padding-bottom: 1.1rem;
   border-bottom: 1px solid var(--border);
 }
 
 .tut-step-num {
   flex-shrink: 0;
-  width: var(--step-num-size);
-  height: var(--step-num-size);
+  width: var(--step-size);
+  height: var(--step-size);
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent-green), #1a7a50);
+  background: linear-gradient(135deg, var(--accent-green), #1aaa58);
   display: grid;
   place-items: center;
   font-family: var(--font-mono);
-  font-size: 1rem;
+  font-size: .95rem;
   font-weight: 700;
   color: #fff;
-  box-shadow: 0 0 0 4px rgba(48,168,107,.15);
+  box-shadow: 0 0 0 5px rgba(40,199,111,.12), 0 0 0 10px rgba(40,199,111,.05);
+  position: relative;
+  z-index: 1;
 }
 
 .tut-section-header h2 {
   font-family: var(--font-display);
-  font-size: 1.35rem;
+  font-size: 1.3rem;
   font-weight: 700;
-  margin: 0;
-  line-height: 1.2;
+  line-height: 1.25;
+  margin-top: .4rem;
 }
 
-.tut-section-header .tut-section-tag {
+.tut-section-tag {
   font-family: var(--font-mono);
-  font-size: .68rem;
+  font-size: .65rem;
   text-transform: uppercase;
-  letter-spacing: .14em;
+  letter-spacing: .15em;
   color: var(--text-muted);
-  margin-top: .2rem;
+  margin-bottom: .3rem;
 }
 
 /* ── Body text ─────────────────────────────────────────────── */
 .tut-wrap p {
   color: var(--text-secondary);
-  font-size: .96rem;
-  margin: 0 0 1.1rem;
+  font-size: .97rem;
+  margin-bottom: 1.1rem;
 }
 
 .tut-wrap strong { color: var(--text-primary); font-weight: 600; }
 
-/* ── Note / callout box ────────────────────────────────────── */
+/* ── Callout boxes ─────────────────────────────────────────── */
 .tut-note {
   display: flex;
   gap: .85rem;
   padding: 1rem 1.25rem;
-  border-radius: var(--radius-md);
+  border-radius: var(--r-md);
   border-left: 3px solid var(--accent-amber);
-  background: rgba(245,158,11,.07);
-  margin: 1.25rem 0;
+  background: rgba(245,158,11,.08);
+  margin: 1.4rem 0;
   font-size: .88rem;
   color: var(--text-secondary);
+  line-height: 1.65;
 }
 
-.tut-note.info  { border-color: var(--accent-cyan);   background: rgba(56,189,248,.07); }
-.tut-note.danger{ border-color: var(--accent-rose);   background: rgba(244,63,94,.07); }
-.tut-note.tip   { border-color: var(--accent-purple); background: rgba(167,139,250,.07); }
+.tut-note.info   { border-color: var(--accent-cyan);   background: rgba(56,189,248,.08); }
+.tut-note.danger { border-color: var(--accent-rose);   background: rgba(244,63,94,.08); }
+.tut-note.tip    { border-color: var(--accent-purple); background: rgba(177,151,252,.08); }
 
-.tut-note-icon { flex-shrink: 0; font-size: 1.1rem; line-height: 1.6; }
+.tut-note-icon {
+  flex-shrink: 0;
+  font-size: 1rem;
+  line-height: 1.75;
+  aria-hidden: true;
+}
 
-/* Inline links */
+/* ── Links ─────────────────────────────────────────────────── */
 .tut-link {
   color: var(--accent-cyan);
   text-decoration: none;
-  border-bottom: 1px dashed rgba(56,189,248,.45);
-  transition: color .2s, border-color .2s;
+  border-bottom: 1px dashed rgba(56,189,248,.4);
+  transition: color .18s, border-color .18s;
 }
-.tut-link:hover {
-  color: #67e8f9;
-  border-color: #67e8f9;
-}
+.tut-link:hover { color: #7dd8f8; border-color: #7dd8f8; }
 
 .tut-link-btn {
-  display: inline-block;
-  margin-top: .7rem;
-  padding: .5rem .9rem;
-  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  margin-top: .75rem;
+  padding: .5rem 1rem;
+  border-radius: var(--r-sm);
   border: 1px solid rgba(56,189,248,.35);
-  background: rgba(56,189,248,.08);
+  background: rgba(56,189,248,.07);
   color: var(--accent-cyan);
   text-decoration: none;
   font-family: var(--font-mono);
-  font-size: .78rem;
-  letter-spacing: .02em;
+  font-size: .76rem;
+  letter-spacing: .03em;
   transition: border-color .2s, background .2s, transform .2s;
 }
 .tut-link-btn:hover {
   border-color: var(--accent-cyan);
-  background: rgba(56,189,248,.14);
+  background: rgba(56,189,248,.13);
   transform: translateY(-1px);
 }
+.tut-link-btn::after { content: '↗'; font-size: .8em; opacity: .7; }
 
 /* ── Wiring table ──────────────────────────────────────────── */
 .tut-table-wrap {
   overflow-x: auto;
-  border-radius: var(--radius-md);
+  border-radius: var(--r-md);
   border: 1px solid var(--border);
   margin: 1.5rem 0;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Mobile fade cue on right edge */
+.tut-table-wrap::after {
+  content: '';
+  display: block;
+  height: 0;
+}
+
+@media (max-width: 640px) {
+  .tut-table-wrap {
+    position: relative;
+    mask-image: linear-gradient(to right, black 80%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, black 80%, transparent 100%);
+  }
 }
 
 .tut-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: .88rem;
+  font-size: .85rem;
   font-family: var(--font-mono);
+  min-width: 560px;
 }
 
 .tut-table th {
@@ -302,133 +487,109 @@
   color: var(--accent-green);
   text-transform: uppercase;
   letter-spacing: .08em;
-  font-size: .72rem;
-  padding: .7rem 1rem;
+  font-size: .68rem;
+  padding: .75rem 1rem;
   text-align: left;
   border-bottom: 1px solid var(--border);
   white-space: nowrap;
 }
 
 .tut-table td {
-  padding: .65rem 1rem;
-  border-bottom: 1px solid rgba(45,55,72,.6);
+  padding: .7rem 1rem;
+  border-bottom: 1px solid rgba(35,45,63,.8);
   color: var(--text-secondary);
   vertical-align: middle;
 }
 
 .tut-table tr:last-child td { border-bottom: none; }
+.tut-table tr:hover td { background: rgba(255,255,255,.018); }
 
-.tut-table tr:hover td { background: rgba(255,255,255,.02); }
+.tut-pin { display: inline-block; padding: .15rem .55rem; border-radius: 4px; font-size: .76rem; font-weight: 600; }
+.tut-pin.display { background: rgba(56,189,248,.12);  color: var(--accent-cyan);  border: 1px solid rgba(56,189,248,.25); }
+.tut-pin.esp     { background: rgba(40,199,111,.12);  color: var(--accent-green); border: 1px solid rgba(40,199,111,.25); }
+.tut-pin.power   { background: rgba(244,63,94,.12);   color: var(--accent-rose);  border: 1px solid rgba(244,63,94,.25); }
+.tut-pin.gnd     { background: rgba(74,85,104,.25);   color: #94a3b8;             border: 1px solid rgba(74,85,104,.4); }
+.tut-pin.desc    { background: transparent; color: var(--text-secondary); border: none; font-family: var(--font-body); font-size: .82rem; }
 
-.tut-pin { display: inline-block; padding: .15rem .55rem; border-radius: 4px; font-size: .78rem; font-weight: 600; }
-.tut-pin.display  { background: rgba(56,189,248,.12); color: var(--accent-cyan); border: 1px solid rgba(56,189,248,.25); }
-.tut-pin.esp      { background: rgba(48,168,107,.12); color: var(--accent-green); border: 1px solid rgba(48,168,107,.25); }
-.tut-pin.power    { background: rgba(244,63,94,.12); color: var(--accent-rose); border: 1px solid rgba(244,63,94,.25); }
-.tut-pin.gnd      { background: rgba(74,85,104,.3); color: #94a3b8; border: 1px solid rgba(74,85,104,.5); }
-.tut-pin.desc     { background: transparent; color: var(--text-secondary); border: none; font-family: var(--font-body); font-size: .83rem; }
+/* Mobile: collapse description column */
+@media (max-width: 560px) {
+  .tut-table .desc-col { display: none; }
+}
 
-/* ── Unified Media System ──────────────────────────────────── */
+/* ── Media grid ────────────────────────────────────────────── */
 .tut-media {
   display: grid;
   gap: 1rem;
-  margin: 1.5rem 0;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  margin: 1.6rem 0;
 }
-
-.tut-media.grid-3 {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.tut-media.grid-2 {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.tut-media.single {
-  grid-template-columns: 1fr;
-}
+.tut-media.grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.tut-media.grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.tut-media.single { grid-template-columns: 1fr; }
 
 .tut-media-card {
-  border-radius: var(--radius-md);
+  border-radius: var(--r-md);
   overflow: hidden;
   border: 1px solid var(--border);
   background: var(--bg-card);
   display: flex;
   flex-direction: column;
   min-width: 0;
+  transition: border-color .2s, box-shadow .2s;
+}
+
+.tut-media-card:hover {
+  border-color: rgba(40,199,111,.35);
+  box-shadow: 0 6px 20px rgba(0,0,0,.3);
 }
 
 .tut-media-view {
   position: relative;
   width: 100%;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 4/3;
   background: var(--bg-code);
   overflow: hidden;
 }
-
-.tut-media-view.tall {
-  aspect-ratio: 16 / 10;
-}
-
-.tut-media-view.video {
-  aspect-ratio: 16 / 9;
-}
+.tut-media-view.tall  { aspect-ratio: 16/10; }
+.tut-media-view.video { aspect-ratio: 16/9; }
 
 .tut-media-view img,
 .tut-media-view iframe {
   position: absolute;
   inset: 0;
-  width: 100%;
-  height: 100%;
-  border: 0;
-  display: block;
+  width: 100%; height: 100%;
+  border: 0; display: block;
+  /* transition on base, not hover — so exit animates too */
+  transition: transform .3s ease;
 }
 
-.tut-media-view img {
-  object-fit: contain;
-  background: var(--bg-code);
-}
-
-.tut-media-view iframe {
-  object-fit: cover;
-}
+.tut-media-view img    { object-fit: contain; background: var(--bg-code); }
+.tut-media-view iframe { object-fit: cover; }
 
 .tut-media-card:hover .tut-media-view img,
-.tut-media-card:hover .tut-media-view iframe {
-  transform: scale(1.02);
-  transition: transform .25s ease;
-}
+.tut-media-card:hover .tut-media-view iframe { transform: scale(1.03); }
 
 .tut-media-caption {
-  padding: .55rem .85rem;
-  font-size: .75rem;
+  padding: .55rem .9rem;
+  font-size: .72rem;
   font-family: var(--font-mono);
   color: var(--text-muted);
   border-top: 1px solid var(--border);
-  background: var(--bg-card);
+  line-height: 1.4;
 }
 
-/* Emphasis helpers */
-.tut-media-card.featured {
-  grid-column: span 2;
-}
-
-.tut-media-card.featured .tut-media-view {
-  aspect-ratio: 16 / 10;
-}
-
-.tut-media-card.featured .tut-media-view.video {
-  aspect-ratio: 16 / 9;
-}
+.tut-media-card.featured { grid-column: span 2; }
+.tut-media-card.featured .tut-media-view { aspect-ratio: 16/10; }
+.tut-media-card.featured .tut-media-view.video { aspect-ratio: 16/9; }
 
 /* ── Code block ────────────────────────────────────────────── */
 .tut-code-wrap {
-  border-radius: var(--radius-md);
+  border-radius: var(--r-md);
   overflow: hidden;
   border: 1px solid var(--border);
   margin: 1.75rem 0;
   font-family: var(--font-mono);
   font-size: .82rem;
-  line-height: 1.7;
+  line-height: 1.72;
 }
 
 .tut-code-header {
@@ -436,51 +597,84 @@
   align-items: center;
   justify-content: space-between;
   padding: .6rem 1rem;
-  background: #111827;
+  background: #0d1219;
   border-bottom: 1px solid var(--border);
+  gap: .75rem;
 }
 
-.tut-code-dots { display: flex; gap: .4rem; }
-.tut-code-dots span {
-  width: 12px; height: 12px; border-radius: 50%;
-}
+.tut-code-dots { display: flex; gap: .4rem; flex-shrink: 0; }
+.tut-code-dots span { width: 12px; height: 12px; border-radius: 50%; }
 .tut-code-dots span:nth-child(1) { background: #f43f5e; }
 .tut-code-dots span:nth-child(2) { background: #f59e0b; }
 .tut-code-dots span:nth-child(3) { background: #22c55e; }
 
 .tut-code-filename {
-  font-size: .75rem;
+  font-size: .73rem;
   color: var(--text-muted);
   letter-spacing: .04em;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .tut-code-lang {
-  font-size: .68rem;
+  font-size: .65rem;
   color: var(--accent-green);
   letter-spacing: .1em;
   text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+/* Copy button */
+.tut-copy-btn {
+  flex-shrink: 0;
+  padding: .28rem .65rem;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,.04);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: .65rem;
+  letter-spacing: .06em;
+  cursor: pointer;
+  transition: border-color .18s, color .18s, background .18s;
+  white-space: nowrap;
+}
+.tut-copy-btn:hover {
+  border-color: var(--accent-green);
+  color: var(--accent-green);
+  background: rgba(40,199,111,.08);
+}
+.tut-copy-btn.copied {
+  border-color: var(--accent-green);
+  color: var(--accent-green);
+  background: rgba(40,199,111,.1);
 }
 
 .tut-code-body {
   background: var(--bg-code);
   overflow-x: auto;
-  padding: 1.25rem 1.5rem;
+  padding: 1.35rem 1.5rem;
   color: var(--text-primary);
   white-space: pre;
+  -webkit-overflow-scrolling: touch;
+  /* right fade on mobile to signal scroll */
+  position: relative;
 }
 
 /* Syntax colours */
-.ck { color: #6272a4; }   /* comment */
-.kw { color: var(--accent-purple); font-weight: 600; } /* keyword */
-.ty { color: var(--accent-cyan); }   /* type */
-.fn { color: var(--accent-green); }  /* function */
-.st { color: #f1fa8c; }              /* string */
-.nu { color: var(--accent-amber); }  /* number */
-.pp { color: #ff79c6; }              /* preprocessor */
-.cm { color: #bd93f9; }              /* class/macro */
-.op { color: var(--text-primary); }  /* operator */
+.ck { color: #5d7299; }
+.kw { color: var(--accent-purple); font-weight: 600; }
+.ty { color: var(--accent-cyan); }
+.fn { color: var(--accent-green); }
+.st { color: #f1e075; }
+.nu { color: var(--accent-amber); }
+.pp { color: #ff79c6; }
+.cm { color: #c397e8; }
+.op { color: var(--text-primary); }
 
-/* ── Install steps list ────────────────────────────────────── */
+/* ── Ordered steps list ────────────────────────────────────── */
 .tut-steps {
   list-style: none;
   padding: 0;
@@ -490,9 +684,9 @@
 
 .tut-steps li {
   display: flex;
-  gap: .85rem;
-  padding: .85rem 1rem;
-  border-radius: var(--radius-sm);
+  gap: .9rem;
+  padding: .9rem 1.1rem;
+  border-radius: var(--r-sm);
   margin-bottom: .5rem;
   background: var(--bg-card);
   border: 1px solid var(--border);
@@ -500,487 +694,569 @@
   color: var(--text-secondary);
   align-items: flex-start;
   counter-increment: tut-step;
+  transition: border-color .18s;
+  overflow: hidden;
+  min-width: 0;
 }
+
+.tut-steps li > * {
+  min-width: 0;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.tut-steps li:hover { border-color: rgba(40,199,111,.3); }
 
 .tut-steps li::before {
   content: counter(tut-step);
   flex-shrink: 0;
-  width: 1.6rem;
-  height: 1.6rem;
+  width: 1.65rem; height: 1.65rem;
   border-radius: 50%;
-  background: rgba(48,168,107,.15);
+  background: rgba(40,199,111,.12);
   color: var(--accent-green);
-  border: 1px solid rgba(48,168,107,.35);
+  border: 1px solid rgba(40,199,111,.3);
   display: grid;
   place-items: center;
   font-family: var(--font-mono);
-  font-size: .72rem;
+  font-size: .7rem;
   font-weight: 700;
   margin-top: .1rem;
+  flex-shrink: 0;
 }
 
 .tut-steps li code {
   font-family: var(--font-mono);
-  font-size: .8rem;
-  background: rgba(255,255,255,.06);
+  font-size: .78rem;
+  background: rgba(255,255,255,.07);
   color: var(--accent-cyan);
-  padding: .1rem .4rem;
+  padding: .1rem .42rem;
   border-radius: 4px;
+  white-space: normal;
+  word-break: break-all;
+  overflow-wrap: anywhere;
 }
 
-/* ── WiFi benefit cards ────────────────────────────────────── */
+/* ── Benefit cards ─────────────────────────────────────────── */
 .tut-benefit-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
   gap: .85rem;
-  margin: 1.25rem 0;
+  margin: 1.4rem 0;
 }
 
 .tut-benefit-card {
-  padding: 1.1rem;
+  padding: 1.15rem;
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  transition: border-color .2s;
+  border-radius: var(--r-md);
+  transition: border-color .2s, transform .2s;
 }
 
-.tut-benefit-card:hover { border-color: rgba(48,168,107,.4); }
+.tut-benefit-card:hover {
+  border-color: rgba(40,199,111,.35);
+  transform: translateY(-2px);
+}
 
-.tut-benefit-icon { font-size: 1.4rem; margin-bottom: .5rem; }
+.tut-benefit-header {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  margin-bottom: .5rem;
+}
+
+.tut-benefit-icon {
+  font-size: 1rem;
+  width: 28px; height: 28px;
+  display: grid;
+  place-items: center;
+  background: rgba(40,199,111,.1);
+  border-radius: 6px;
+  flex-shrink: 0;
+}
 
 .tut-benefit-title {
-  font-weight: 700;
-  font-size: .88rem;
+  font-weight: 600;
+  font-size: .87rem;
   color: var(--text-primary);
-  margin-bottom: .35rem;
+  line-height: 1.3;
 }
 
 .tut-benefit-body {
-  font-size: .8rem;
+  font-size: .79rem;
   color: var(--text-muted);
-  line-height: 1.55;
+  line-height: 1.6;
 }
 
-/* ── Divider ───────────────────────────────────────────────── */
+.tut-benefit-body code {
+  font-family: var(--font-mono);
+  font-size: .74rem;
+  background: rgba(255,255,255,.07);
+  color: var(--accent-cyan);
+  padding: .05rem .35rem;
+  border-radius: 3px;
+}
+
+/* ── Gradient divider ──────────────────────────────────────── */
 .tut-divider {
   border: none;
-  border-top: 1px solid var(--border);
-  margin: 2.5rem 0;
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--accent-green) 30%, var(--accent-cyan) 70%, transparent);
+  opacity: .25;
+  margin: 2.75rem 0;
 }
 
 /* ── Responsive ────────────────────────────────────────────── */
 @media (max-width: 900px) {
-  .tut-media.grid-3 {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .tut-media-card.featured {
-    grid-column: span 2;
-  }
+  .tut-media.grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tut-media-card.featured { grid-column: span 2; }
 }
 
 @media (max-width: 640px) {
-  .tut-hero { padding: 2rem 1.25rem; }
-  .tut-section-header { gap: .65rem; }
+  .tut-hero { padding: 2.25rem 1.5rem 2rem; border-radius: var(--r-lg); }
+  .tut-wrap { padding: 0 1rem 4rem; }
+  .tut-timeline::before { left: 1.35rem; }
   .tut-section-header h2 { font-size: 1.1rem; }
   .tut-code-body { font-size: .76rem; }
-  .tut-media,
-  .tut-media.grid-3,
-  .tut-media.grid-2 {
-    grid-template-columns: 1fr;
-  }
-  .tut-media-card.featured {
-    grid-column: span 1;
-  }
+  .tut-media.grid-2,
+  .tut-media.grid-3 { grid-template-columns: 1fr; }
+  .tut-media-card.featured { grid-column: span 1; }
+  .tut-media-card.featured .tut-media-view { aspect-ratio: 4/3; }
+  .tut-hero h1 { font-size: 1.65rem; }
+  .nav-steps { display: none; }
+}
+
+@media (max-width: 400px) {
+  .tut-hero-eyebrow { font-size: .62rem; }
+  .tut-pill { font-size: .62rem; padding: .24rem .65rem; }
 }
 </style>
+</head>
+<body>
+
+<!-- Reading progress bar -->
+<div id="progress-bar" role="progressbar" aria-label="Reading progress" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+
+<!-- Sticky nav (appears after hero) -->
+<nav id="sticky-nav" aria-label="Tutorial steps">
+  <a href="#" class="nav-brand">ctechassist.org</a>
+  <div class="nav-steps">
+    <a href="#step-01" class="nav-step" title="Hardware — Seating the Module">01</a>
+    <a href="#step-02" class="nav-step" title="Power Rails">02</a>
+    <a href="#step-03" class="nav-step" title="SPI Bus">03</a>
+    <a href="#step-04" class="nav-step" title="Software">04</a>
+    <a href="#step-05" class="nav-step" title="WiFiManager">05</a>
+  </div>
+</nav>
 
 <div class="tut-wrap">
 
-  <div class="tut-hero">
-    <div class="tut-hero-eyebrow">ctechassist.org &rsaquo; Build Guide</div>
-    <h1>ESP32-S3 + ST7735&nbsp;TFT<br><span>Full Assembly &amp; Firmware Guide</span></h1>
-    <p class="tut-hero-sub">
-      A complete engineering walkthrough for building a networked display controller
-      using the Lonely Binary ESP32-S3 Gold Edition, the Lonely Binary Expansion Board,
-      and a 1.8&Prime; ST7735-based TFT LCD over a hardware SPI bus.
-    </p>
-    <div class="tut-pill-row">
-      <span class="tut-pill green">ESP32-S3</span>
-      <span class="tut-pill cyan">ST7735 SPI</span>
-      <span class="tut-pill amber">Arduino IDE</span>
-      <span class="tut-pill">WiFiManager</span>
-      <span class="tut-pill">3.3 V Logic</span>
+  <!-- ── Hero ──────────────────────────────────────────────── -->
+  <header class="tut-hero" id="top">
+    <div class="hero-inner">
+      <div class="tut-hero-eyebrow">ctechassist.org &rsaquo; Core Tech Weather Tracker</div>
+      <h1>ESP32-S3 + ST7735&nbsp;TFT<br><span>Full Assembly &amp; Firmware Guide</span></h1>
+      <p class="tut-hero-sub">
+        A complete engineering walkthrough for building a networked display controller
+        using the Lonely Binary ESP32-S3 Gold Edition, the Lonely Binary Expansion Board,
+        and a 1.8&Prime; ST7735-based TFT LCD over a hardware SPI bus.
+      </p>
+      <div class="tut-pill-row">
+        <span class="tut-pill green">ESP32-S3</span>
+        <span class="tut-pill cyan">ST7735 SPI</span>
+        <span class="tut-pill amber">Arduino IDE</span>
+        <span class="tut-pill">WiFiManager</span>
+        <span class="tut-pill">3.3 V Logic</span>
+      </div>
     </div>
-  </div>
+  </header>
 
+  <!-- ── Product cards ──────────────────────────────────────── -->
   <div class="tut-products">
-    <a href="https://www.amazon.com/Lonely-ESP32-S3-Development-2-54mm-Expansion/dp/B0FNQVZJ6D?th=1" target="_blank" rel="noopener" class="tut-product-link">
-      <div class="tut-product-icon">🟡</div>
+    <a href="https://www.amazon.com/Lonely-ESP32-S3-Development-2-54mm-Expansion/dp/B0FNQVZJ6D?th=1"
+       target="_blank" rel="noopener noreferrer" class="tut-product-link">
+      <div class="tut-product-icon" aria-hidden="true">🟡</div>
       <div>
         <div class="tut-product-label">Microcontroller</div>
         <div class="tut-product-name">Lonely Binary ESP32-S3 Gold Edition</div>
       </div>
-      <div class="tut-product-arrow">&#8599;</div>
+      <div class="tut-product-arrow" aria-hidden="true">&#8599;</div>
     </a>
 
-    <a href="https://www.amazon.com/Lonely-ESP32-S3-Development-2-54mm-Expansion/dp/B0FNQVZJ6D?th=1" target="_blank" rel="noopener" class="tut-product-link">
-      <div class="tut-product-icon">🔌</div>
+    <a href="https://www.amazon.com/Lonely-ESP32-S3-Development-2-54mm-Expansion/dp/B0FNQVZJ6D?th=1"
+       target="_blank" rel="noopener noreferrer" class="tut-product-link">
+      <div class="tut-product-icon" aria-hidden="true">🔌</div>
       <div>
         <div class="tut-product-label">Expansion Base</div>
         <div class="tut-product-name">Lonely Binary Expansion Board</div>
       </div>
-      <div class="tut-product-arrow">&#8599;</div>
+      <div class="tut-product-arrow" aria-hidden="true">&#8599;</div>
     </a>
 
-    <a href="https://www.amazon.com/Display-Module-128%C3%97160-Serial-ST7735/dp/B07R413JTD/" target="_blank" rel="noopener" class="tut-product-link">
-      <div class="tut-product-icon">🖥️</div>
+    <a href="https://www.amazon.com/Display-Module-128%C3%97160-Serial-ST7735/dp/B07R413JTD/"
+       target="_blank" rel="noopener noreferrer" class="tut-product-link">
+      <div class="tut-product-icon" aria-hidden="true">🖥️</div>
       <div>
         <div class="tut-product-label">Display Module</div>
         <div class="tut-product-name">1.8&Prime; TFT SPI LCD (ST7735)</div>
       </div>
-      <div class="tut-product-arrow">&#8599;</div>
+      <div class="tut-product-arrow" aria-hidden="true">&#8599;</div>
     </a>
   </div>
 
-  <div class="tut-section">
-    <div class="tut-section-header">
-      <div class="tut-step-num">01</div>
-      <div>
-        <div class="tut-section-tag">Hardware</div>
-        <h2>Seating the ESP32-S3 on the Expansion Board</h2>
-      </div>
-    </div>
+  <!-- ── Timeline sections ──────────────────────────────────── -->
+  <div class="tut-timeline">
 
-    <p>
-      The Lonely Binary ESP32-S3 Gold Edition is a dual-row castellated/pin-header module
-      exposing the full GPIO complement of Espressif's ESP32-S3 SoC. Before any wiring
-      begins, the module must be mechanically seated and electrically mated to the Lonely
-      Binary Expansion Board with strict attention to orientation.
-    </p>
-
-    <div class="tut-media grid-2">
-      <div class="tut-media-card">
-        <div class="tut-media-view">
-          <img src="https://i.postimg.cc/HnNMrLZ1/1.jpg" alt="ESP32-S3 Gold Edition with Expansion Board — top-down view showing GPIO headers" loading="lazy">
+    <!-- ── STEP 01 ── -->
+    <section class="tut-section" id="step-01" aria-labelledby="h2-01">
+      <div class="tut-section-header">
+        <div class="tut-step-num" aria-label="Step 1">01</div>
+        <div>
+          <div class="tut-section-tag">Hardware</div>
+          <h2 id="h2-01">Seating the ESP32-S3 on the Expansion Board</h2>
         </div>
-        <div class="tut-media-caption">Fig 1.1 — ESP32-S3 Gold Edition: top-down view</div>
       </div>
 
-      <div class="tut-media-card">
-        <div class="tut-media-view">
-          <img src="https://i.postimg.cc/0j4SzNWq/2.jpg" alt="Lonely Binary Expansion Board — receptacle sockets and breakout headers" loading="lazy">
+      <p>
+        The Lonely Binary ESP32-S3 Gold Edition is a dual-row castellated/pin-header module
+        exposing the full GPIO complement of Espressif's ESP32-S3 SoC. Before any wiring
+        begins, the module must be mechanically seated and electrically mated to the Lonely
+        Binary Expansion Board with strict attention to orientation.
+      </p>
+
+      <div class="tut-media grid-2">
+        <div class="tut-media-card">
+          <div class="tut-media-view">
+            <img src="https://i.postimg.cc/HnNMrLZ1/1.jpg"
+                 alt="ESP32-S3 Gold Edition — top-down view showing dual GPIO header rows"
+                 width="400" height="300" loading="lazy">
+          </div>
+          <div class="tut-media-caption">Fig 1.1 — ESP32-S3 Gold Edition: top-down view</div>
         </div>
-        <div class="tut-media-caption">Fig 1.2 — Expansion Board receptacle sockets</div>
-      </div>
-    </div>
 
-    <p>
-      <strong>Orientation:</strong> Locate the USB-C port on the ESP32-S3 module.
-      The expansion board is silkscreened with a matching USB symbol or notch indicator
-      on one side. These two markers must align — inserting the module backwards will
-      map 3.3 V rails to incorrect pins and can permanently damage both boards. With the
-      module correctly oriented, position it above the two rows of 2.54 mm female
-      receptacles on the expansion board, ensuring every pin is directly above its
-      corresponding socket.
-    </p>
-
-    <p>
-      <strong>Seating procedure:</strong> Apply even downward pressure across both ends
-      of the module simultaneously. Never rock or lever the board from one side, as this
-      bends the inner pins. Press firmly until the plastic pin shoulders sit flush against
-      the receptor housings — you should feel a distinct click as each row seats. Visually
-      inspect all four corners to confirm no pins are misaligned or bridging adjacent
-      sockets.
-    </p>
-
-    <div class="tut-note">
-      <div class="tut-note-icon">⚠️</div>
-      <div>
-        <strong>Static Precaution:</strong> The ESP32-S3's GPIO matrix and USB PHY are
-        sensitive to electrostatic discharge. Handle the module by its edges and work on an
-        anti-static mat or grounded surface. Touch a grounded metal object before picking
-        up either board.
-      </div>
-    </div>
-
-    <div class="tut-media single">
-      <div class="tut-media-card">
-        <div class="tut-media-view tall">
-          <img src="https://i.postimg.cc/VvhtJNGL/3.jpg" alt="Fully seated ESP32-S3 on the Expansion Board — side profile showing flush pin headers" loading="lazy">
+        <div class="tut-media-card">
+          <div class="tut-media-view">
+            <img src="https://i.postimg.cc/0j4SzNWq/2.jpg"
+                 alt="Lonely Binary Expansion Board — receptacle sockets and breakout headers"
+                 width="400" height="300" loading="lazy">
+          </div>
+          <div class="tut-media-caption">Fig 1.2 — Expansion Board receptacle sockets</div>
         </div>
-        <div class="tut-media-caption">Fig 1.3 — Fully seated module: flush pin shoulders confirm correct installation</div>
       </div>
-    </div>
 
-    <p>
-      Once seated, the expansion board provides physical strain relief and exposes the
-      ESP32-S3's GPIO rows in clearly labeled breakout headers, a dedicated USB pass-through
-      connector, and power-rail distribution strips. These breakout headers are what we will
-      reference for all subsequent wiring steps.
-    </p>
-  </div>
+      <p>
+        <strong>Orientation:</strong> Locate the USB-C port on the ESP32-S3 module.
+        The expansion board is silkscreened with a matching USB symbol or notch indicator
+        on one side. These two markers must align — inserting the module backwards will
+        map 3.3 V rails to incorrect pins and can permanently damage both boards.
+      </p>
 
-  <hr class="tut-divider">
+      <p>
+        <strong>Seating procedure:</strong> Apply even downward pressure across both ends
+        of the module simultaneously. Never rock or lever the board from one side, as this
+        bends the inner pins. Press firmly until the plastic pin shoulders sit flush against
+        the receptor housings — you should feel a distinct click as each row seats. Inspect
+        all four corners to confirm no pins are misaligned or bridging adjacent sockets.
+      </p>
 
-  <div class="tut-section">
-    <div class="tut-section-header">
-      <div class="tut-step-num">02</div>
-      <div>
-        <div class="tut-section-tag">Power Rails</div>
-        <h2>Establishing 3.3 V and Ground on the Breadboard</h2>
-      </div>
-    </div>
-
-    <p>
-      The ESP32-S3 operates at a native logic level of <strong>3.3 V</strong>. All
-      peripherals in this build — including the ST7735 display — are specified for 3.3 V
-      operation. Routing power through the breadboard's distribution rails creates a clean,
-      shared reference for every component and avoids long, impedance-inducing point-to-point
-      wires.
-    </p>
-
-    <div class="tut-media single">
-      <div class="tut-media-card">
-        <div class="tut-media-view">
-          <img src="https://i.postimg.cc/QCz7FM4h/8.jpg" alt="3.3V and GND jumper wires running from the expansion board to breadboard power rails" loading="lazy">
+      <div class="tut-note" role="note">
+        <div class="tut-note-icon" aria-hidden="true">⚠️</div>
+        <div>
+          <strong>Static Precaution:</strong> The ESP32-S3's GPIO matrix and USB PHY are
+          sensitive to electrostatic discharge. Handle the module by its edges and work on an
+          anti-static mat or grounded surface. Touch a grounded metal object before picking
+          up either board.
         </div>
-        <div class="tut-media-caption">Fig 2.1 — 3.3 V / GND jumpers to breadboard rails</div>
       </div>
-    </div>
 
-    <p>
-      <strong>3.3 V rail:</strong> Locate the pin labeled <strong>3V3</strong> (or
-      <strong>3.3V</strong>) on the expansion board's power header. Run a short red or
-      orange 22 AWG jumper wire from this pin to the positive (+) column of your
-      breadboard. If your breadboard has two independent rail sections (top and bottom),
-      link them with a short bridge jumper so all positive columns carry 3.3 V
-      simultaneously.
-    </p>
-
-    <p>
-      <strong>Ground rail:</strong> Locate any <strong>GND</strong> pin on the expansion
-      board — there are usually multiple. Run a black jumper wire to the negative (−)
-      column of your breadboard. As with the positive rail, bridge both sections if needed.
-      A solid common ground is critical: without it, voltage level differences between
-      components will cause erratic SPI communication and corrupted display output.
-    </p>
-
-    <div class="tut-note info">
-      <div class="tut-note-icon">ℹ️</div>
-      <div>
-        The expansion board's onboard regulator sources 3.3 V directly from the ESP32-S3's
-        internal LDO. The maximum safe draw from this rail when powering external peripherals
-        is approximately <strong>300–500 mA</strong>. The ST7735 display draws roughly
-        40–80 mA during active rendering, well within budget.
-      </div>
-    </div>
-  </div>
-
-  <hr class="tut-divider">
-
-  <div class="tut-section">
-    <div class="tut-section-header">
-      <div class="tut-step-num">03</div>
-      <div>
-        <div class="tut-section-tag">SPI Bus</div>
-        <h2>5-Wire SPI Connection: ST7735 to ESP32-S3</h2>
-      </div>
-    </div>
-
-    <p>
-      The 1.8&Prime; ST7735 display communicates over a 4-wire SPI bus plus one dedicated
-      data/command (D/C) control line, totaling five signal wires. The ESP32-S3's hardware
-      SPI peripheral (<strong>SPI2 / HSPI</strong>) handles the clock generation and data
-      shifting in silicon, freeing the CPU for application logic and delivering reliable
-      timing even at 26 MHz SPI clock speeds.
-    </p>
-
-    <div class="tut-media grid-2">
-      <div class="tut-media-card">
-        <div class="tut-media-view">
-          <img src="https://i.postimg.cc/SRP9nKTQ/4.jpg" alt="ST7735 display module back face showing the 8-pin FPC connector and SPI pads" loading="lazy">
+      <div class="tut-media single">
+        <div class="tut-media-card">
+          <div class="tut-media-view tall">
+            <img src="https://i.postimg.cc/VvhtJNGL/3.jpg"
+                 alt="Fully seated ESP32-S3 on the Expansion Board — side profile showing flush pin headers"
+                 width="800" height="500" loading="lazy">
+          </div>
+          <div class="tut-media-caption">Fig 1.3 — Fully seated module: flush pin shoulders confirm correct installation</div>
         </div>
-        <div class="tut-media-caption">Fig 3.1 — ST7735 module: SPI pin header detail</div>
       </div>
-      <div class="tut-media-card">
-        <div class="tut-media-view">
-          <img src="https://i.postimg.cc/Fz6SYKWY/10.jpg" alt="Five-wire SPI bus fully wired between the display and the ESP32-S3 expansion headers" loading="lazy">
+
+      <p>
+        Once seated, the expansion board provides physical strain relief and exposes the
+        ESP32-S3's GPIO rows in clearly labeled breakout headers, a dedicated USB pass-through
+        connector, and power-rail distribution strips. These breakout headers are what we will
+        reference for all subsequent wiring steps.
+      </p>
+    </section>
+
+    <hr class="tut-divider">
+
+    <!-- ── STEP 02 ── -->
+    <section class="tut-section" id="step-02" aria-labelledby="h2-02">
+      <div class="tut-section-header">
+        <div class="tut-step-num" aria-label="Step 2">02</div>
+        <div>
+          <div class="tut-section-tag">Power Rails</div>
+          <h2 id="h2-02">Establishing 3.3 V and Ground on the Breadboard</h2>
         </div>
-        <div class="tut-media-caption">Fig 3.2 — Completed 5-wire SPI harness</div>
       </div>
-    </div>
 
-    <p>Use the following reference table for all signal connections. GPIO numbers correspond
-      to the ESP32-S3's logical GPIO index as labeled on the expansion board silkscreen.</p>
+      <p>
+        The ESP32-S3 operates at a native logic level of <strong>3.3 V</strong>. All
+        peripherals in this build — including the ST7735 display — are specified for 3.3 V
+        operation. Routing power through the breadboard's distribution rails creates a clean,
+        shared reference for every component.
+      </p>
 
-    <div class="tut-table-wrap">
-      <table class="tut-table">
-        <thead>
-          <tr>
-            <th>Display Pin</th>
-            <th>Signal Function</th>
-            <th>ESP32-S3 GPIO</th>
-            <th>Description</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><span class="tut-pin display">CS</span></td>
-            <td>Chip Select (Active LOW)</td>
-            <td><span class="tut-pin esp">GPIO 5</span></td>
-            <td><span class="tut-pin desc">Selects the ST7735 as the active SPI slave. Pull LOW to enable; HIGH to deselect and release the bus.</span></td>
-          </tr>
-          <tr>
-            <td><span class="tut-pin display">RESET</span></td>
-            <td>Hardware Reset (Active LOW)</td>
-            <td><span class="tut-pin esp">GPIO 4</span></td>
-            <td><span class="tut-pin desc">Drives the controller reset sequence. The Adafruit library pulses this pin LOW for ≥10 ms on <code>begin()</code>.</span></td>
-          </tr>
-          <tr>
-            <td><span class="tut-pin display">A0 / DC</span></td>
-            <td>Data / Command Select</td>
-            <td><span class="tut-pin esp">GPIO 2</span></td>
-            <td><span class="tut-pin desc">HIGH = pixel data byte; LOW = command register byte. This line disambiguates every SPI payload to the ST7735.</span></td>
-          </tr>
-          <tr>
-            <td><span class="tut-pin display">SDA / MOSI</span></td>
-            <td>Master Out Slave In</td>
-            <td><span class="tut-pin esp">GPIO 23</span></td>
-            <td><span class="tut-pin desc">Serial data line. Pixel color data and register commands are clocked out MSB-first on this line.</span></td>
-          </tr>
-          <tr>
-            <td><span class="tut-pin display">SCK</span></td>
-            <td>SPI Clock</td>
-            <td><span class="tut-pin esp">GPIO 18</span></td>
-            <td><span class="tut-pin desc">Hardware SPI clock. The ST7735 samples SDA on the rising edge (CPOL=0, CPHA=0, Mode 0).</span></td>
-          </tr>
-          <tr>
-            <td><span class="tut-pin power">VCC</span></td>
-            <td>Supply Voltage</td>
-            <td><span class="tut-pin power">3.3 V Rail</span></td>
-            <td><span class="tut-pin desc">Connect to the breadboard's positive 3.3 V rail established in Step 2.</span></td>
-          </tr>
-          <tr>
-            <td><span class="tut-pin gnd">GND</span></td>
-            <td>Ground</td>
-            <td><span class="tut-pin gnd">GND Rail</span></td>
-            <td><span class="tut-pin desc">Connect to the breadboard's ground rail. A shared GND is mandatory for valid SPI voltage levels.</span></td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <div class="tut-note danger">
-      <div class="tut-note-icon">🚫</div>
-      <div>
-        <strong>Do NOT connect the ST7735 to 5 V.</strong> The display controller and its
-        glass LCD panel are rated for 3.3 V maximum. Applying 5 V will immediately destroy
-        the ST7735 IC. The ESP32-S3's 3.3 V logic is directly compatible — no level
-        shifting is required in this build.
-      </div>
-    </div>
-
-    <p>
-      Verify wire continuity with a multimeter in continuity mode before powering on:
-      probe each signal wire end-to-end, then probe between any VCC/GND node pairs to
-      confirm no accidental shorts exist on the breadboard.
-    </p>
-  </div>
-
-  <hr class="tut-divider">
-
-  <div class="tut-section">
-    <div class="tut-section-header">
-      <div class="tut-step-num">04</div>
-      <div>
-        <div class="tut-section-tag">Arduino IDE</div>
-        <h2>Software Configuration &amp; Library Installation</h2>
-      </div>
-    </div>
-
-    <div class="tut-media grid-2">
-      <div class="tut-media-card featured">
-        <div class="tut-media-view tall">
-          <img src="https://i.postimg.cc/fTjKHcrw/serialmontiro.png" alt="Arduino IDE 2.x Boards Manager showing the ESP32 platform entry" loading="lazy">
+      <div class="tut-media single">
+        <div class="tut-media-card">
+          <div class="tut-media-view">
+            <img src="https://i.postimg.cc/QCz7FM4h/8.jpg"
+                 alt="3.3V and GND jumper wires running from the expansion board to breadboard power rails"
+                 width="800" height="600" loading="lazy">
+          </div>
+          <div class="tut-media-caption">Fig 2.1 — 3.3 V / GND jumpers to breadboard rails</div>
         </div>
-        <div class="tut-media-caption">Fig 4.1 — Arduino IDE</div>
       </div>
-      <div class="tut-media-card">
-        <div class="tut-media-view tall">
-          <img src="https://i.postimg.cc/WzQ0z3zw/IMG-0031.jpg" alt="Library Manager showing Adafruit ST7735 search results" loading="lazy">
+
+      <p>
+        <strong>3.3 V rail:</strong> Locate the pin labeled <strong>3V3</strong> on the
+        expansion board's power header. Run a short red or orange jumper wire from this pin to
+        the positive (+) column of your breadboard. If your breadboard has two independent rail
+        sections, link them with a bridge jumper so both positive columns carry 3.3 V.
+      </p>
+
+      <p>
+        <strong>Ground rail:</strong> Locate any <strong>GND</strong> pin on the expansion
+        board and run a black jumper wire to the negative (−) column of your breadboard.
+        Bridge both sections if needed. A solid common ground is critical — without it,
+        voltage differences between components will cause erratic SPI communication and
+        corrupted display output.
+      </p>
+
+      <div class="tut-note info" role="note">
+        <div class="tut-note-icon" aria-hidden="true">ℹ️</div>
+        <div>
+          The expansion board's onboard regulator sources 3.3 V directly from the ESP32-S3's
+          internal LDO. The maximum safe draw from this rail when powering external peripherals
+          is approximately <strong>300–500 mA</strong>. The ST7735 display draws roughly
+          40–80 mA during active rendering — well within budget.
         </div>
-        <div class="tut-media-caption">Fig 4.2 — Core Tech Weather Tracker &amp; GFX</div>
       </div>
-    </div>
+    </section>
 
-    <p>
-      The Arduino IDE (version 2.x recommended) requires Espressif's ESP32 Arduino core
-      before it can target any ESP32-series chip. This core installs the compiler toolchain,
-      linker scripts, board definitions, and hardware abstraction layer (HAL) that translates
-      Arduino API calls into ESP32-S3 machine instructions.
-    </p>
+    <hr class="tut-divider">
 
-    <ol class="tut-steps">
-      <li>
-        Open Arduino IDE. Navigate to <strong>File → Preferences</strong> (macOS:
-        <strong>Arduino IDE → Settings</strong>). In the
-        <strong>"Additional boards manager URLs"</strong> field, paste the Espressif
-        stable release URL:
-        <code>https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json</code>
-        Click <strong>OK</strong>.
-      </li>
-      <li>
-        Open <strong>Tools → Board → Boards Manager</strong>. Search for <code>esp32</code>.
-        Locate the entry published by <strong>Espressif Systems</strong> and click
-        <strong>Install</strong>. This downloads ~250 MB of toolchain and SDK files.
-      </li>
-      <li>
-        After installation, navigate to <strong>Tools → Board → ESP32 Arduino</strong> and
-        select <strong>ESP32S3 Dev Module</strong>. This board definition correctly maps the
-        USB CDC, flash geometry, and PSRAM configuration for the S3.
-      </li>
-      <li>
-        Configure the following board settings under the <strong>Tools</strong> menu:
-        <code>USB Mode → USB-OTG (TinyUSB)</code> or
-        <code>USB CDC On Boot → Enabled</code> to activate the native USB serial port for
-        debugging output on the Serial Monitor.
-      </li>
-      <li>
-        Open <strong>Tools → Manage Libraries</strong>. Search for
-        <code>Adafruit ST7735</code> and install <strong>Adafruit ST7735 and ST7789 Library</strong>.
-        When prompted, select <strong>Install All</strong> to also install the
-        <strong>Adafruit GFX Library</strong> dependency, which provides all primitive drawing
-        functions (text, shapes, bitmaps).
-      </li>
-      <li>
-        In the same Library Manager, search for <code>WiFiManager</code> and install the
-        version by <strong>tzapu</strong>. This library is the core of the captive-portal
-        credential system described in Section 5.
-      </li>
-    </ol>
-
-    <div class="tut-note tip">
-      <div class="tut-note-icon">💡</div>
-      <div>
-        The ESP32 Arduino core ships with a hardware SPI driver that automatically uses
-        <strong>SPI2 (HSPI)</strong> when the GPIO pins defined in your sketch match the
-        S3's hardware SPI peripheral mapping. Always pass your CS, DC, and RESET pins to
-        the <code>Adafruit_ST7735</code> constructor and call <code>tft.initR()</code>
-        with the correct tab-color constant for your specific 1.8&Prime; module
-        (<code>INITR_BLACKTAB</code> is the most common).
-      </div>
-    </div>
-
-    <div class="tut-code-wrap">
-      <div class="tut-code-header">
-        <div class="tut-code-dots">
-          <span></span><span></span><span></span>
+    <!-- ── STEP 03 ── -->
+    <section class="tut-section" id="step-03" aria-labelledby="h2-03">
+      <div class="tut-section-header">
+        <div class="tut-step-num" aria-label="Step 3">03</div>
+        <div>
+          <div class="tut-section-tag">SPI Bus</div>
+          <h2 id="h2-03">5-Wire SPI Connection: ST7735 to ESP32-S3</h2>
         </div>
-        <div class="tut-code-filename">esp32s3_tft_wifi.ino</div>
-        <div class="tut-code-lang">Arduino / C++</div>
       </div>
-      <div class="tut-code-body"><span class="ck">// ─────────────────────────────────────────────────────────────
+
+      <p>
+        The 1.8&Prime; ST7735 display communicates over a 4-wire SPI bus plus one dedicated
+        data/command (D/C) control line, totaling five signal wires. The ESP32-S3's hardware
+        SPI peripheral (<strong>SPI2 / HSPI</strong>) handles the clock generation and data
+        shifting in silicon, freeing the CPU for application logic and delivering reliable
+        timing even at 26 MHz SPI clock speeds.
+      </p>
+
+      <div class="tut-media grid-2">
+        <div class="tut-media-card">
+          <div class="tut-media-view">
+            <img src="https://i.postimg.cc/SRP9nKTQ/4.jpg"
+                 alt="ST7735 display module back face showing the SPI pin header"
+                 width="400" height="300" loading="lazy">
+          </div>
+          <div class="tut-media-caption">Fig 3.1 — ST7735 module: SPI pin header detail</div>
+        </div>
+        <div class="tut-media-card">
+          <div class="tut-media-view">
+            <img src="https://i.postimg.cc/Fz6SYKWY/10.jpg"
+                 alt="Five-wire SPI bus fully wired between the display and the ESP32-S3 expansion headers"
+                 width="400" height="300" loading="lazy">
+          </div>
+          <div class="tut-media-caption">Fig 3.2 — Completed 5-wire SPI harness</div>
+        </div>
+      </div>
+
+      <p>Use the following reference table for all signal connections. GPIO numbers correspond
+        to the ESP32-S3's logical GPIO index as labeled on the expansion board silkscreen.</p>
+
+      <div class="tut-table-wrap">
+        <table class="tut-table">
+          <thead>
+            <tr>
+              <th scope="col">Display Pin</th>
+              <th scope="col">Signal</th>
+              <th scope="col">ESP32-S3 GPIO</th>
+              <th scope="col" class="desc-col">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="tut-pin display">CS</span></td>
+              <td>Chip Select (Active LOW)</td>
+              <td><span class="tut-pin esp">GPIO 8</span></td>
+              <td class="desc-col"><span class="tut-pin desc">Selects the ST7735 as the active SPI slave. Pull LOW to enable; HIGH to deselect and release the bus.</span></td>
+            </tr>
+            <tr>
+              <td><span class="tut-pin display">RESET</span></td>
+              <td>Hardware Reset (Active LOW)</td>
+              <td><span class="tut-pin esp">GPIO 10</span></td>
+              <td class="desc-col"><span class="tut-pin desc">Drives the controller reset sequence. The Adafruit library pulses this pin LOW for ≥10 ms on <code>begin()</code>.</span></td>
+            </tr>
+            <tr>
+              <td><span class="tut-pin display">A0 / DC</span></td>
+              <td>Data / Command Select</td>
+              <td><span class="tut-pin esp">GPIO 9</span></td>
+              <td class="desc-col"><span class="tut-pin desc">HIGH = pixel data byte; LOW = command register byte. This line disambiguates every SPI payload.</span></td>
+            </tr>
+            <tr>
+              <td><span class="tut-pin display">SDA / MOSI</span></td>
+              <td>Master Out Slave In</td>
+              <td><span class="tut-pin esp">GPIO 11</span></td>
+              <td class="desc-col"><span class="tut-pin desc">Serial data line. Pixel color data and register commands are clocked out MSB-first on this line.</span></td>
+            </tr>
+            <tr>
+              <td><span class="tut-pin display">SCK</span></td>
+              <td>SPI Clock</td>
+              <td><span class="tut-pin esp">GPIO 13</span></td>
+              <td class="desc-col"><span class="tut-pin desc">Hardware SPI clock. The ST7735 samples SDA on the rising edge (CPOL=0, CPHA=0, Mode 0).</span></td>
+            </tr>
+            <tr>
+              <td><span class="tut-pin power">VCC</span></td>
+              <td>Supply Voltage</td>
+              <td><span class="tut-pin power">3.3 V Rail</span></td>
+              <td class="desc-col"><span class="tut-pin desc">Connect to the breadboard's positive 3.3 V rail established in Step 2.</span></td>
+            </tr>
+            <tr>
+              <td><span class="tut-pin gnd">GND</span></td>
+              <td>Ground</td>
+              <td><span class="tut-pin gnd">GND Rail</span></td>
+              <td class="desc-col"><span class="tut-pin desc">Connect to the breadboard's ground rail. A shared GND is mandatory for valid SPI voltage levels.</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="tut-note danger" role="alert">
+        <div class="tut-note-icon" aria-hidden="true">🚫</div>
+        <div>
+          <strong>Do NOT connect the ST7735 to 5 V.</strong> The display controller and its
+          glass LCD panel are rated for 3.3 V maximum. Applying 5 V will immediately destroy
+          the ST7735 IC. The ESP32-S3's 3.3 V logic is directly compatible — no level
+          shifting is required in this build.
+        </div>
+      </div>
+
+      <p>
+        Verify wire continuity with a multimeter in continuity mode before powering on:
+        probe each signal wire end-to-end, then probe between any VCC/GND node pairs to
+        confirm no accidental shorts exist on the breadboard.
+      </p>
+    </section>
+
+    <hr class="tut-divider">
+
+    <!-- ── STEP 04 ── -->
+    <section class="tut-section" id="step-04" aria-labelledby="h2-04">
+      <div class="tut-section-header">
+        <div class="tut-step-num" aria-label="Step 4">04</div>
+        <div>
+          <div class="tut-section-tag">Arduino IDE</div>
+          <h2 id="h2-04">Software Configuration &amp; Library Installation</h2>
+        </div>
+      </div>
+
+      <div class="tut-media grid-2">
+        <div class="tut-media-card featured">
+          <div class="tut-media-view tall">
+            <img src="https://i.postimg.cc/fTjKHcrw/serialmontiro.png"
+                 alt="Arduino IDE 2.x Boards Manager showing the ESP32 platform entry"
+                 width="700" height="440" loading="lazy">
+          </div>
+          <div class="tut-media-caption">Fig 4.1 — Arduino IDE 2.x</div>
+        </div>
+        <div class="tut-media-card">
+          <div class="tut-media-view tall">
+            <img src="https://i.postimg.cc/WzQ0z3zw/IMG-0031.jpg"
+                 alt="Library Manager showing Adafruit ST7735 and GFX library results"
+                 width="400" height="250" loading="lazy">
+          </div>
+          <div class="tut-media-caption">Fig 4.2 — Core Tech Weather Tracker &amp; GFX</div>
+        </div>
+      </div>
+
+      <p>
+        The Arduino IDE (version 2.x recommended) requires Espressif's ESP32 Arduino core
+        before it can target any ESP32-series chip. This core installs the compiler toolchain,
+        linker scripts, board definitions, and hardware abstraction layer (HAL) that translates
+        Arduino API calls into ESP32-S3 machine instructions.
+      </p>
+
+      <ol class="tut-steps">
+        <li>
+          <span>Open Arduino IDE. Navigate to <strong>File → Preferences</strong> (macOS:
+          <strong>Arduino IDE → Settings</strong>). In the
+          <strong>"Additional boards manager URLs"</strong> field, paste the Espressif
+          stable release URL:
+          <code style="word-break:break-all;white-space:normal;">https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json</code>
+          Click <strong>OK</strong>.</span>
+        </li>
+        <li>
+          Open <strong>Tools → Board → Boards Manager</strong>. Search for <code>esp32</code>.
+          Locate the entry published by <strong>Espressif Systems</strong> and click
+          <strong>Install</strong>. This downloads ~250 MB of toolchain and SDK files.
+        </li>
+        <li>
+          After installation, navigate to <strong>Tools → Board → ESP32 Arduino</strong> and
+          select <strong>ESP32S3 Dev Module</strong>. This board definition correctly maps the
+          USB CDC, flash geometry, and PSRAM configuration for the S3.
+        </li>
+        <li>
+          Configure the following board settings under the <strong>Tools</strong> menu:
+          <code>USB Mode → USB-OTG (TinyUSB)</code> or
+          <code>USB CDC On Boot → Enabled</code> to activate the native USB serial port for
+          debugging output on the Serial Monitor.
+        </li>
+        <li>
+          Open <strong>Tools → Manage Libraries</strong>. Search for
+          <code>Adafruit ST7735</code> and install <strong>Adafruit ST7735 and ST7789 Library</strong>.
+          When prompted, select <strong>Install All</strong> to also install the
+          <strong>Adafruit GFX Library</strong> dependency.
+        </li>
+        <li>
+          In the same Library Manager, search for <code>WiFiManager</code> and install the
+          version by <strong>tzapu</strong>. This library powers the captive-portal
+          credential system described in Section 5.
+        </li>
+      </ol>
+
+      <div class="tut-note tip" role="note">
+        <div class="tut-note-icon" aria-hidden="true">💡</div>
+        <div>
+          The ESP32 Arduino core ships with a hardware SPI driver that automatically uses
+          <strong>SPI2 (HSPI)</strong> when the GPIO pins in your sketch match the S3's
+          hardware SPI peripheral mapping. Always pass your CS, DC, and RESET pins to
+          the <code>Adafruit_ST7735</code> constructor and call <code>tft.initR()</code>
+          with the correct tab-color constant for your 1.8&Prime; module
+          (<code>INITR_BLACKTAB</code> is the most common).
+        </div>
+      </div>
+
+      <div class="tut-code-wrap">
+        <div class="tut-code-header">
+          <div class="tut-code-dots" aria-hidden="true">
+            <span></span><span></span><span></span>
+          </div>
+          <div class="tut-code-filename">esp32s3_tft_wifi.ino</div>
+          <div class="tut-code-lang">Arduino / C++</div>
+          <button class="tut-copy-btn" onclick="copyCode(this)" aria-label="Copy code to clipboard">COPY</button>
+        </div>
+        <div class="tut-code-body" id="code-block-1"><span class="ck">// ─────────────────────────────────────────────────────────────
 // ctechassist.org | ESP32-S3 + ST7735 TFT + WiFiManager
 // Board  : ESP32S3 Dev Module
 // Core   : Espressif ESP32 Arduino Core ≥ 2.0.14
@@ -1063,129 +1339,229 @@
   <span class="ck">// Add your application logic here.
   // The TFT and WiFi stack are fully initialised at this point.</span>
 }</div>
-    </div>
-  </div>
-
-  <hr class="tut-divider">
-
-  <div class="tut-section">
-    <div class="tut-section-header">
-      <div class="tut-step-num">05</div>
-      <div>
-        <div class="tut-section-tag">Firmware</div>
-        <h2>WiFiManager: Captive Portal &amp; Secure Credential Handling</h2>
       </div>
-    </div>
+    </section>
 
-    <div class="tut-media grid-2">
-      <div class="tut-media-card">
-        <div class="tut-media-view tall">
-          <img src="https://i.postimg.cc/3R5nRYS1/wifiportal.jpg" alt="Smartphone browser showing the WiFiManager captive portal SSID selection screen" loading="lazy">
-        </div>
-        <div class="tut-media-caption">Fig 5.1 — WiFiManager captive portal on a smartphone browser</div>
-      </div>
+    <hr class="tut-divider">
 
-      <div class="tut-media-card featured">
-        <div class="tut-media-view video">
-          <iframe allow="fullscreen" allowfullscreen src="https://streamable.com/e/su5eah?muted=1"></iframe>
-        </div>
-        <div class="tut-media-caption">Fig 5.2 — Complete SetUP</div>
-      </div>
-    </div>
-
-    <p>
-      Hardcoding a Wi-Fi SSID and password directly into firmware is a widespread and
-      serious security antipattern. The credentials are compiled into the binary image,
-      visible to anyone with physical access to the device who can read flash memory
-      with a logic analyzer or <code>esptool.py</code>. They also require a firmware
-      reflash every time the network changes — an impractical constraint in any deployed
-      product. The <strong>WiFiManager library by tzapu</strong> eliminates both problems
-      through a dynamic captive portal provisioning flow.
-    </p>
-
-    <p>
-      <strong>How it works:</strong> On first boot (or after credential erasure), the
-      ESP32-S3 finds no stored Wi-Fi credentials in its NVS (Non-Volatile Storage)
-      partition. WiFiManager responds by configuring the ESP32-S3's integrated Wi-Fi
-      radio as a <em>soft access point (SoftAP)</em> with a user-defined SSID (in our
-      sketch: <code>"CTech-Setup"</code>). Any Wi-Fi-capable device that connects to this
-      AP is served a DNS redirect that forces all domain queries to resolve to
-      <code>192.168.4.1</code> — the hallmark behavior of a captive portal, identical to
-      hotel and airport Wi-Fi login pages.
-    </p>
-
-    <p>
-      At that address, a minimal HTTP server presents an HTML configuration page listing
-      all visible SSIDs discovered by the ESP32-S3's active scan, plus password input
-      fields. The user selects their network, enters the passphrase, and submits. WiFiManager
-      stores the credentials in ESP32-S3 NVS flash (encrypted at rest by the ESP-IDF
-      secure storage mechanism), shuts down the SoftAP, and connects to the selected
-      network as a station. On all subsequent boots, <code>autoConnect()</code> reads NVS,
-      attempts the stored credentials, and skips the portal entirely if successful.
-    </p>
-
-    <div class="tut-benefit-grid">
-      <div class="tut-benefit-card">
-        <div class="tut-benefit-icon">🔒</div>
-        <div class="tut-benefit-title">No Hardcoded Secrets</div>
-        <div class="tut-benefit-body">
-          Credentials never appear in source code, compiled binaries, or version control
-          history. The flash-resident NVS partition is separate from the firmware image.
+    <!-- ── STEP 05 ── -->
+    <section class="tut-section" id="step-05" aria-labelledby="h2-05">
+      <div class="tut-section-header">
+        <div class="tut-step-num" aria-label="Step 5">05</div>
+        <div>
+          <div class="tut-section-tag">Firmware</div>
+          <h2 id="h2-05">WiFiManager: Captive Portal &amp; Secure Credential Handling</h2>
         </div>
       </div>
-      <div class="tut-benefit-card">
-        <div class="tut-benefit-icon">🔄</div>
-        <div class="tut-benefit-title">Zero-Reflash Reconfiguration</div>
-        <div class="tut-benefit-body">
-          Changing networks requires only a portal reset call — no IDE, no USB cable.
-          Call <code>wm.resetSettings()</code> to clear NVS and trigger reprovisioning.
-        </div>
-      </div>
-      <div class="tut-benefit-card">
-        <div class="tut-benefit-icon">📱</div>
-        <div class="tut-benefit-title">Any-Device Provisioning</div>
-        <div class="tut-benefit-body">
-          The captive portal is a standard web page. Any browser on any OS — phone,
-          tablet, laptop — can provision the device without installing special apps.
-        </div>
-      </div>
-      <div class="tut-benefit-card">
-        <div class="tut-benefit-icon">⚡</div>
-        <div class="tut-benefit-title">Fast Reconnection</div>
-        <div class="tut-benefit-body">
-          Stored NVS credentials allow the ESP32-S3 to associate with a known AP in
-          under two seconds on warm boot, bypassing the full scan-and-portal cycle.
-        </div>
-      </div>
-      <div class="tut-benefit-card">
-        <div class="tut-benefit-icon">🖥️</div>
-        <div class="tut-benefit-title">TFT Status Feedback</div>
-        <div class="tut-benefit-body">
-          The <code>configModeCallback</code> in our sketch writes portal SSID and IP
-          directly to the ST7735 display so users always know the device's current state
-          without opening a serial console.
-        </div>
-      </div>
-      <div class="tut-benefit-card">
-        <div class="tut-benefit-icon">🛠️</div>
-        <div class="tut-benefit-title">Extensible Parameters</div>
-        <div class="tut-benefit-body">
-          WiFiManager's custom parameter API lets you add extra fields (API keys, MQTT
-          broker addresses, device names) to the portal form, persisting all values
-          in NVS alongside Wi-Fi credentials.
-        </div>
-      </div>
-    </div>
 
-    <div class="tut-note tip">
-      <div class="tut-note-icon">💡</div>
-      <div>
-        <strong>Core Tech SETUP Guide for the ESP-32 S3 and LCD TFT SCREEN</strong>
-        <a class="tut-link-btn" href="https://docs.google.com/document/d/1nzyjX3uKS_nDGJzYx5Y4JxVump6trqO_P88tq7wvM6Y/edit?usp=drive_link" target="_blank" rel="noopener">
-          Open the full setup guide
-        </a>
-      </div>
-    </div>
-  </div>
+      <div class="tut-media grid-2">
+        <div class="tut-media-card">
+          <div class="tut-media-view tall">
+            <img src="https://i.postimg.cc/3R5nRYS1/wifiportal.jpg"
+                 alt="Smartphone browser showing the WiFiManager captive portal SSID selection screen"
+                 width="400" height="250" loading="lazy">
+          </div>
+          <div class="tut-media-caption">Fig 5.1 — WiFiManager captive portal on a smartphone browser</div>
+        </div>
 
-</div>
+        <div class="tut-media-card featured">
+          <div class="tut-media-view video">
+            <iframe title="Complete setup video walkthrough"
+                    allow="fullscreen" allowfullscreen
+                    src="https://streamable.com/e/su5eah?muted=1"
+                    loading="lazy"></iframe>
+          </div>
+          <div class="tut-media-caption">Fig 5.2 — Complete setup walkthrough</div>
+        </div>
+      </div>
+
+      <p>
+        Hardcoding a Wi-Fi SSID and password directly into firmware is a widespread and
+        serious security antipattern. The credentials are compiled into the binary image,
+        visible to anyone with physical access to the device who can read flash memory
+        with a logic analyzer or <code style="font-family:var(--font-mono);font-size:.82em;background:rgba(255,255,255,.07);color:var(--accent-cyan);padding:.1rem .4rem;border-radius:4px;">esptool.py</code>. They also require a firmware
+        reflash every time the network changes. The <strong>WiFiManager library by tzapu</strong>
+        eliminates both problems through a dynamic captive portal provisioning flow.
+      </p>
+
+      <p>
+        <strong>How it works:</strong> On first boot (or after credential erasure), the
+        ESP32-S3 finds no stored Wi-Fi credentials in its NVS (Non-Volatile Storage)
+        partition. WiFiManager responds by configuring the ESP32-S3's integrated Wi-Fi
+        radio as a <em>soft access point (SoftAP)</em> with a user-defined SSID
+        (in our sketch: <code style="font-family:var(--font-mono);font-size:.82em;background:rgba(255,255,255,.07);color:var(--accent-cyan);padding:.1rem .4rem;border-radius:4px;">"CTech-Setup"</code>). Any Wi-Fi-capable device that connects to this
+        AP is served a DNS redirect that forces all domain queries to resolve to
+        <code style="font-family:var(--font-mono);font-size:.82em;background:rgba(255,255,255,.07);color:var(--accent-cyan);padding:.1rem .4rem;border-radius:4px;">192.168.4.1</code> — the hallmark behavior of a captive portal.
+      </p>
+
+      <p>
+        At that address, a minimal HTTP server presents an HTML configuration page listing
+        all visible SSIDs discovered by the ESP32-S3's active scan, plus password input
+        fields. WiFiManager stores the credentials in ESP32-S3 NVS flash, shuts down the
+        SoftAP, and connects to the selected network as a station. On all subsequent boots,
+        <code style="font-family:var(--font-mono);font-size:.82em;background:rgba(255,255,255,.07);color:var(--accent-cyan);padding:.1rem .4rem;border-radius:4px;">autoConnect()</code> reads NVS and skips the portal entirely if successful.
+      </p>
+
+      <div class="tut-benefit-grid">
+        <div class="tut-benefit-card">
+          <div class="tut-benefit-header">
+            <div class="tut-benefit-icon" aria-hidden="true">🔒</div>
+            <div class="tut-benefit-title">No Hardcoded Secrets</div>
+          </div>
+          <div class="tut-benefit-body">
+            Credentials never appear in source code, compiled binaries, or version control
+            history. The flash-resident NVS partition is separate from the firmware image.
+          </div>
+        </div>
+        <div class="tut-benefit-card">
+          <div class="tut-benefit-header">
+            <div class="tut-benefit-icon" aria-hidden="true">🔄</div>
+            <div class="tut-benefit-title">Zero-Reflash Reconfiguration</div>
+          </div>
+          <div class="tut-benefit-body">
+            Changing networks requires only a portal reset call — no IDE, no USB cable.
+            Call <code>wm.resetSettings()</code> to clear NVS and trigger reprovisioning.
+          </div>
+        </div>
+        <div class="tut-benefit-card">
+          <div class="tut-benefit-header">
+            <div class="tut-benefit-icon" aria-hidden="true">📱</div>
+            <div class="tut-benefit-title">Any-Device Provisioning</div>
+          </div>
+          <div class="tut-benefit-body">
+            The captive portal is a standard web page. Any browser on any OS — phone,
+            tablet, laptop — can provision the device without installing special apps.
+          </div>
+        </div>
+        <div class="tut-benefit-card">
+          <div class="tut-benefit-header">
+            <div class="tut-benefit-icon" aria-hidden="true">⚡</div>
+            <div class="tut-benefit-title">Fast Reconnection</div>
+          </div>
+          <div class="tut-benefit-body">
+            Stored NVS credentials allow the ESP32-S3 to associate with a known AP in
+            under two seconds on warm boot, bypassing the full scan-and-portal cycle.
+          </div>
+        </div>
+        <div class="tut-benefit-card">
+          <div class="tut-benefit-header">
+            <div class="tut-benefit-icon" aria-hidden="true">🖥️</div>
+            <div class="tut-benefit-title">TFT Status Feedback</div>
+          </div>
+          <div class="tut-benefit-body">
+            The <code>configModeCallback</code> in our sketch writes portal SSID and IP
+            directly to the ST7735 display so users always know the device's current state
+            without opening a serial console.
+          </div>
+        </div>
+        <div class="tut-benefit-card">
+          <div class="tut-benefit-header">
+            <div class="tut-benefit-icon" aria-hidden="true">🛠️</div>
+            <div class="tut-benefit-title">Extensible Parameters</div>
+          </div>
+          <div class="tut-benefit-body">
+            WiFiManager's custom parameter API lets you add extra fields (API keys, MQTT
+            broker addresses, device names) to the portal form, persisting all values
+            in NVS alongside Wi-Fi credentials.
+          </div>
+        </div>
+      </div>
+
+      <div class="tut-note tip" role="note">
+        <div class="tut-note-icon" aria-hidden="true">💡</div>
+        <div>
+          <strong>Core Tech SETUP Guide for the ESP-32 S3</strong>
+          <br>
+          <a class="tut-link-btn"
+             href="https://docs.google.com/document/d/1nzyjX3uKS_nDGJzYx5Y4JxVump6trqO_P88tq7wvM6Y/edit?usp=drive_link"
+             target="_blank" rel="noopener noreferrer">
+            Open the full setup guide
+          </a>
+        </div>
+      </div>
+    </section>
+
+  </div><!-- /tut-timeline -->
+
+</div><!-- /tut-wrap -->
+
+<script>
+/* ── Reading progress bar ──────────────────────────────────── */
+(function() {
+  var bar = document.getElementById('progress-bar');
+  var nav = document.getElementById('sticky-nav');
+  var hero = document.querySelector('.tut-hero');
+  var sections = document.querySelectorAll('.tut-section');
+  var navSteps = document.querySelectorAll('.nav-step');
+
+  function onScroll() {
+    var scrollTop = window.scrollY;
+    var docHeight = document.documentElement.scrollHeight - window.innerHeight;
+    var pct = docHeight > 0 ? (scrollTop / docHeight * 100).toFixed(1) : 0;
+    bar.style.setProperty('--progress-w', pct + '%');
+    bar.setAttribute('aria-valuenow', Math.round(pct));
+
+    /* Show nav after hero */
+    var heroBottom = hero.getBoundingClientRect().bottom;
+    if (heroBottom < 0) {
+      nav.classList.add('visible');
+    } else {
+      nav.classList.remove('visible');
+    }
+
+    /* Active nav step highlighting */
+    var current = '';
+    sections.forEach(function(sec) {
+      var rect = sec.getBoundingClientRect();
+      if (rect.top <= 80) current = sec.id;
+    });
+    navSteps.forEach(function(step) {
+      var href = step.getAttribute('href').replace('#', '');
+      step.classList.toggle('active', href === current);
+    });
+  }
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+})();
+
+/* ── Copy to clipboard ─────────────────────────────────────── */
+function copyCode(btn) {
+  var codeBlock = btn.closest('.tut-code-wrap').querySelector('.tut-code-body');
+  var text = codeBlock.innerText || codeBlock.textContent;
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function() {
+      showCopied(btn);
+    }).catch(function() {
+      fallbackCopy(text, btn);
+    });
+  } else {
+    fallbackCopy(text, btn);
+  }
+}
+
+function fallbackCopy(text, btn) {
+  var ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.cssText = 'position:fixed;opacity:0;top:-9999px;left:-9999px;';
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  try { document.execCommand('copy'); showCopied(btn); } catch(e) {}
+  document.body.removeChild(ta);
+}
+
+function showCopied(btn) {
+  var orig = btn.textContent;
+  btn.textContent = 'COPIED ✓';
+  btn.classList.add('copied');
+  setTimeout(function() {
+    btn.textContent = orig;
+    btn.classList.remove('copied');
+  }, 2000);
+}
+</script>
+
+</body>
+</html>
